@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 const PROTECTED_ROUTES = ["/product"];
 const AUTH_ROUTES = ["/login", "/register"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("routemisr_token")?.value;
 
