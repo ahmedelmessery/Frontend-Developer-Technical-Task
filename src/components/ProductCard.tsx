@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
 import { Product } from "@/types/product";
@@ -18,7 +16,7 @@ export default function ProductCard({ product }: { product: Product }) {
           alt={product.title}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          className="object-contain p-4 group-hover:scale-[1.03] transition-transform duration-200"
+          className="object-cover group-hover:scale-[1.03] transition-transform duration-200"
         />
       </div>
 

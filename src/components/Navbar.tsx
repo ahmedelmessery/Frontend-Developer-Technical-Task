@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ShoppingBag } from "lucide-react";
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const router = useRouter();
 
   const handleLogout = () => {
@@ -25,7 +25,7 @@ export default function Navbar() {
 
         {/* Auth */}
         <div className="flex items-center gap-3 text-sm">
-          {user ? (
+          {isLoading ? null : user ? (
             <>
               <span className="text-gray-500 hidden sm:block">{user.name}</span>
               <button

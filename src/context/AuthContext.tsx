@@ -16,9 +16,9 @@ import {
 } from "react";
 import Cookies from "js-cookie";
 
-const TOKEN_KEY = "token";
-const USER_KEY = "user";
-const BASE = "https://ecommerce.routemisr.com/api/v1";
+const TOKEN_KEY = "routemisr_token";
+const USER_KEY = "routemisr_user";
+const BASE = process.env.NEXT_PUBLIC_API_URL!;
 
 interface AuthUser {
   name: string;
@@ -99,8 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: string,
       rePassword: string,
       phone: string
-    ) => {
-      const res = await fetch(`${BASE}/auth/signup`, {
+    ) => {      const res = await fetch(`${BASE}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password, rePassword, phone }),
@@ -127,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(data.token);
       setUser(registeredUser);
     },
-    []
+    [setToken, setUser]
   );
 
   const logout = useCallback(() => {

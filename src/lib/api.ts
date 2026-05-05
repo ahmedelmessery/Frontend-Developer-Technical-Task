@@ -18,7 +18,7 @@
 
 import { Product, Category, PaginatedResponse } from "@/types/product";
 
-const BASE = "https://ecommerce.routemisr.com/api/v1";
+const BASE = process.env.NEXT_PUBLIC_API_URL!;
 
 /** Fetch ALL products (all pages merged) for client-side filtering */
 export async function getAllProducts(): Promise<Product[]> {

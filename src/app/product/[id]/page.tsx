@@ -1,15 +1,15 @@
-import { getProduct, getProducts } from "@/lib/api";
-import Image from "next/image";
+import { getProduct, getAllProducts } from "@/lib/api";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Star } from "lucide-react";
+import ProductGallery from "@/components/ProductGallery";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
 export async function generateStaticParams() {
-  const products = await getProducts();
+  const products = await getAllProducts();
   return products.map((p) => ({ id: p._id }));
 }
 
@@ -17,9 +17,9 @@ export async function generateMetadata({ params }: PageProps) {
   const { id } = await params;
   try {
     const product = await getProduct(id);
-    return { title: `${product.title} — ShopNext` };
+    return { title: product.title };
   } catch {
-    return { title: "Product — ShopNext" };
+    return { title: "Product" };
   }
 }
 
@@ -47,15 +47,12 @@ export default async function ProductDetailPage({ params }: PageProps) {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2">
 
-          {/* Image */}
-          <div className="relative h-72 md:h-auto min-h-72 bg-gray-50">
-            <Image
-              src={product.imageCover}
-              alt={product.title}
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-contain p-8"
-              priority
+          {/* Interactive image gallery */}
+          <div className="border-b md:border-b-0 md:border-r border-gray-100">
+            <ProductGallery
+              cover={product.imageCover}
+              images={product.images ?? []}
+              title={product.title}
             />
           </div>
 
@@ -129,27 +126,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Extra images */}
-        {product.images?.length > 0 && (
-          <div className="p-6 border-t border-gray-100">
-            <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">More images</p>
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              {product.images.map((img, i) => (
-                <div
-                  key={i}
-                  className="relative w-20 h-20 flex-shrink-0 rounded-lg border border-gray-200 bg-gray-50"
-                >
-                  <Image
-                    src={img}
-                    alt={`${product.title} ${i + 1}`}
-                    fill
-                    className="object-contain p-2"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

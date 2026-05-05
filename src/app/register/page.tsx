@@ -1,39 +1,35 @@
 "use client";
 
-import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { registerSchema, RegisterInput } from "@/lib/validation";
 
 export default function RegisterPage() {
-  const { register } = useAuth();
+  const { register: registerUser } = useAuth();
   const router = useRouter();
-
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [rePassword, setRePassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
-    if (password !== rePassword) {
-      setError("Passwords do not match");
-      return;
-    }
-    setIsLoading(true);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterInput>({
+    resolver: zodResolver(registerSchema),
+  });
+
+  const onSubmit = async (data: RegisterInput) => {
+    setServerError("");
     try {
-      await register(name, email, password, rePassword, phone);
+      await registerUser(data.name, data.email, data.password, data.rePassword, data.phone);
       router.push("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
-    } finally {
-      setIsLoading(false);
+      setServerError(err instanceof Error ? err.message : "Registration failed");
     }
   };
 
@@ -41,19 +37,14 @@ export default function RegisterPage() {
     <div className="flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-sm">
 
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-xl font-semibold text-gray-900">Create account</h1>
-        </div>
-
-        {/* Error */}
-        {error && (
+        {/* Server error */}
+        {serverError && (
           <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-100 text-sm text-red-600">
-            {error}
+            {serverError}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           {/* Full name */}
           <div>
             <label htmlFor="name" className="block text-sm text-gray-600 mb-1">
@@ -62,13 +53,18 @@ export default function RegisterPage() {
             <input
               id="name"
               type="text"
-              required
               autoComplete="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 transition"
+              {...register("name")}
+              className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 transition ${
+                errors.name
+                  ? "border-red-300 focus:ring-red-300"
+                  : "border-gray-200 focus:ring-gray-400"
+              }`}
               placeholder="Ahmed Elmessery"
             />
+            {errors.name && (
+              <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>
+            )}
           </div>
 
           {/* Email */}
@@ -79,13 +75,18 @@ export default function RegisterPage() {
             <input
               id="email"
               type="email"
-              required
               autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 transition"
+              {...register("email")}
+              className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 transition ${
+                errors.email
+                  ? "border-red-300 focus:ring-red-300"
+                  : "border-gray-200 focus:ring-gray-400"
+              }`}
               placeholder="you@example.com"
             />
+            {errors.email && (
+              <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
+            )}
           </div>
 
           {/* Phone */}
@@ -96,13 +97,18 @@ export default function RegisterPage() {
             <input
               id="phone"
               type="tel"
-              required
               autoComplete="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 transition"
+              {...register("phone")}
+              className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 transition ${
+                errors.phone
+                  ? "border-red-300 focus:ring-red-300"
+                  : "border-gray-200 focus:ring-gray-400"
+              }`}
               placeholder="01010700701"
             />
+            {errors.phone && (
+              <p className="mt-1 text-xs text-red-500">{errors.phone.message}</p>
+            )}
           </div>
 
           {/* Password */}
@@ -114,11 +120,13 @@ export default function RegisterPage() {
               <input
                 id="password"
                 type={showPassword ? "text" : "password"}
-                required
                 autoComplete="new-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 pr-9 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 transition"
+                {...register("password")}
+                className={`w-full px-3 py-2 pr-9 rounded-lg border text-sm focus:outline-none focus:ring-1 transition ${
+                  errors.password
+                    ? "border-red-300 focus:ring-red-300"
+                    : "border-gray-200 focus:ring-gray-400"
+                }`}
                 placeholder="e.g. Ahmed@123"
               />
               <button
@@ -130,6 +138,9 @@ export default function RegisterPage() {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            {errors.password && (
+              <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
+            )}
           </div>
 
           {/* Confirm password */}
@@ -140,22 +151,27 @@ export default function RegisterPage() {
             <input
               id="rePassword"
               type={showPassword ? "text" : "password"}
-              required
               autoComplete="new-password"
-              value={rePassword}
-              onChange={(e) => setRePassword(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 transition"
+              {...register("rePassword")}
+              className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-1 transition ${
+                errors.rePassword
+                  ? "border-red-300 focus:ring-red-300"
+                  : "border-gray-200 focus:ring-gray-400"
+              }`}
               placeholder="Repeat password"
             />
+            {errors.rePassword && (
+              <p className="mt-1 text-xs text-red-500">{errors.rePassword.message}</p>
+            )}
           </div>
 
           {/* Submit */}
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isSubmitting}
             className="w-full py-2.5 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
           >
-            {isLoading ? "Creating account…" : "Create account"}
+            {isSubmitting ? "Creating account…" : "Create account"}
           </button>
         </form>
 
