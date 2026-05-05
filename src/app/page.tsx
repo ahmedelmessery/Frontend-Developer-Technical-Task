@@ -1,65 +1,83 @@
-import Image from "next/image";
+/**
+ * Home page — Server Component.
+ *
+ * Architecture:
+ * - Server fetches ALL products once (cached 60s via Next.js fetch cache)
+ * - URL params (keyword, category) are used to filter the list server-side
+ *   before rendering — no extra API calls needed
+ * - URL param (page) handles pagination of the filtered results
+ * - <Filters> (client) debounces keyword and pushes URL params
+ *
+ * NOTE: The RouteМisr API does not support keyword/category query params —
+ * confirmed by testing. Filtering is done on the full product list here.
+ */
 
-export default function Home() {
+import { Suspense } from "react";
+import { getAllProducts, getCategories } from "@/lib/api";
+import ProductCard from "@/components/ProductCard";
+import Filters from "@/components/Filters";
+import Pagination from "@/components/Pagination";
+
+interface PageProps {
+  searchParams: Promise<{
+    keyword?: string;
+    category?: string;
+    page?: string;
+  }>;
+}
+
+const PAGE_SIZE = 12;
+
+export default async function HomePage({ searchParams }: PageProps) {
+  const params = await searchParams;
+
+  const keyword = params.keyword?.trim().toLowerCase() ?? "";
+  const category = params.category ?? "";
+  const page = Math.max(1, Number(params.page) || 1);
+
+  // Fetch all products + categories in parallel (both are cached)
+  const [allProducts, categories] = await Promise.all([
+    getAllProducts(),
+    getCategories(),
+  ]);
+
+  // Filter server-side before rendering
+  const filtered = allProducts.filter((p) => {
+    const matchesKeyword = keyword === "" || p.title.toLowerCase().includes(keyword);
+    const matchesCategory = category === "" || p.category?._id === category;
+    return matchesKeyword && matchesCategory;
+  });
+
+  // Paginate
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const safePage = Math.min(page, Math.max(1, totalPages));
+  const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      {/* Filters — client component, needs Suspense for useSearchParams */}
+      <Suspense fallback={null}>
+        <Filters categories={categories} totalResults={filtered.length} />
+      </Suspense>
+
+      {/* Grid */}
+      {paginated.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 text-gray-400 gap-2">
+          <p className="text-base font-medium">No products found</p>
+          <p className="text-sm">Try a different search or category</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {paginated.map((product) => (
+            <ProductCard key={product._id} product={product} />
+          ))}
         </div>
-      </main>
+      )}
+
+      {/* Pagination */}
+      <Suspense fallback={null}>
+        <Pagination currentPage={safePage} totalPages={totalPages} />
+      </Suspense>
     </div>
   );
 }
